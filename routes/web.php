@@ -18,6 +18,7 @@ Route::get('/cart', [PageController::class, 'cart'])->name('cart');
 Route::get('/checkout', [PageController::class, 'checkout'])->name('checkout');
 Route::post('/checkout', [CheckoutController::class, 'place'])->name('checkout.place');
 Route::get('/checkout/thanks/{orderNumber}', [CheckoutController::class, 'success'])->name('checkout.success');
+Route::get('/track-order', [PageController::class, 'trackOrder'])->name('orders.track');
 Route::get('/api/products', [PageController::class, 'productsApi'])->name('api.products');
 Route::get('/policy', [PageController::class, 'policy'])->name('policy');
 Route::get('/lookbook', [PageController::class, 'lookbook'])->name('lookbook');

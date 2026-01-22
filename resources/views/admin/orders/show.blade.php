@@ -43,6 +43,12 @@
           <input type="hidden" name="status" value="cancelled">
           <button class="kb-btn-outline" type="submit">Cancel</button>
         </form>
+        <form method="POST" action="{{ route('admin.orders.update', $order) }}">
+          @csrf
+          @method('PATCH')
+          <input type="hidden" name="status" value="refunded">
+          <button class="kb-btn-outline" type="submit">Mark Refunded</button>
+        </form>
         <form method="POST" action="{{ route('admin.orders.destroy', $order) }}" onsubmit="return confirm('Delete this order permanently?');">
           @csrf
           @method('DELETE')

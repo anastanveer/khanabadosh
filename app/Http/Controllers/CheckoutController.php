@@ -5,10 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
+use App\Mail\OrderPlacedCustomer;
 use App\Support\CurrencyFormatter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 
@@ -95,7 +97,7 @@ class CheckoutController extends Controller
             $paymentProofPath = $request->file('payment_proof')->store('payment-proofs', 'public');
         }
 
-        $order = DB::transaction(function () use ($data, $counts, $products, $paymentDetails) {
+        $order = DB::transaction(function () use ($data, $counts, $products, $paymentDetails, $paymentProofPath) {
             $subtotal = 0;
             $itemsCount = 0;
             $order = Order::create([
@@ -148,6 +150,16 @@ class CheckoutController extends Controller
 
             return $order;
         });
+
+        $notificationEmails = array_values(array_filter(
+            (array) config('khanabadosh.order_notification_emails', [])
+        ));
+
+        $mailToCustomer = Mail::to($order->email);
+        if ($notificationEmails) {
+            $mailToCustomer->bcc($notificationEmails);
+        }
+        $mailToCustomer->send(new OrderPlacedCustomer($order));
 
         return redirect()->route('checkout.success', ['orderNumber' => $order->order_number]);
     }

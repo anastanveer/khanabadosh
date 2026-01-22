@@ -1,6 +1,27 @@
 @extends('layouts.app')
 
 @section('content')
+  @php
+    $statusLabels = [
+        'pending' => 'Pending',
+        'approved' => 'Approved',
+        'shipped' => 'Shipped',
+        'delivered' => 'Delivered',
+        'cancelled' => 'Cancelled',
+        'refunded' => 'Refunded',
+    ];
+    $statusMessages = [
+        'pending' => 'We are reviewing your order and will update you soon.',
+        'approved' => 'Your order is confirmed and being prepared for dispatch.',
+        'shipped' => 'Your order is on the way. Tracking will be shared if available.',
+        'delivered' => 'Your order has been delivered. Thank you for shopping with us.',
+        'cancelled' => 'Your order was cancelled. If you already paid, a refund will be processed.',
+        'refunded' => 'Your refund is complete and has been sent back to the original payment method.',
+    ];
+    $statusKey = $order->status ?? 'pending';
+    $statusLabel = $statusLabels[$statusKey] ?? ucfirst($statusKey);
+    $statusMessage = $statusMessages[$statusKey] ?? 'We will keep you updated by email.';
+  @endphp
   <main class="kb-collection" data-checkout-page data-clear-cart>
     <div class="container">
       <div class="kb-page-title">Order Confirmed</div>
@@ -11,6 +32,14 @@
           <div class="kb-checkout-panel">
             <div class="kb-card-title">Order Details</div>
             <div class="kb-card-sub">Order #{{ $order->order_number }} - {{ $order->created_at->format('d M Y, H:i') }}</div>
+
+            <div class="kb-checkout-section">
+              <div class="kb-card-title">Status</div>
+              <div class="kb-card-sub">
+                <span class="kb-status-pill kb-status-pill--{{ $order->status }}">{{ $statusLabel }}</span>
+              </div>
+              <div class="kb-card-sub mt-2">{{ $statusMessage }}</div>
+            </div>
 
             <div class="kb-checkout-section">
               <div class="kb-card-title">Shipping</div>
@@ -38,6 +67,7 @@
               @endif
             </div>
 
+            <a class="kb-btn-primary w-100 mt-3 text-decoration-none text-white text-center" href="{{ route('orders.track', ['order_number' => $order->order_number, 'email' => $order->email]) }}">Track Order</a>
             <a class="kb-btn-outline w-100 mt-3 text-decoration-none" href="{{ route('collections.show', ['slug' => 'men-all']) }}">Continue Shopping</a>
           </div>
         </div>

@@ -184,6 +184,10 @@
                   <span class="kb-status-pill kb-status-pill--cancelled">Cancelled</span>
                   <strong>{{ $ordersByStatus['cancelled'] ?? 0 }}</strong>
                 </div>
+                <div class="kb-order-status-item">
+                  <span class="kb-status-pill kb-status-pill--refunded">Refunded</span>
+                  <strong>{{ $ordersByStatus['refunded'] ?? 0 }}</strong>
+                </div>
               </div>
             </div>
           </div>
@@ -321,13 +325,14 @@
     var collectionCounts = @json($topCollections->pluck('count'));
     var stockLabels = @json($topStockCollections->pluck('title'));
     var stockValues = @json($topStockCollections->pluck('stock'));
-    var orderStatusLabels = ['Pending', 'Approved', 'Shipped', 'Delivered', 'Cancelled'];
+    var orderStatusLabels = ['Pending', 'Approved', 'Shipped', 'Delivered', 'Cancelled', 'Refunded'];
     var orderStatusValues = [
       {{ $ordersByStatus['pending'] ?? 0 }},
       {{ $ordersByStatus['approved'] ?? 0 }},
       {{ $ordersByStatus['shipped'] ?? 0 }},
       {{ $ordersByStatus['delivered'] ?? 0 }},
       {{ $ordersByStatus['cancelled'] ?? 0 }},
+      {{ $ordersByStatus['refunded'] ?? 0 }},
     ];
 
     var ctx = document.getElementById('collectionChart');
@@ -397,7 +402,8 @@
               'rgba(16,185,129,0.8)',
               'rgba(59,130,246,0.8)',
               'rgba(34,197,94,0.8)',
-              'rgba(239,68,68,0.8)'
+              'rgba(239,68,68,0.8)',
+              'rgba(20,184,166,0.8)'
             ],
             borderWidth: 0,
           }]

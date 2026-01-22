@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Collection;
+use App\Models\Order;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -210,6 +211,41 @@ class PageController extends Controller
             'bankAccount' => \App\Models\Setting::getValue('bank_account_number', '0001-2233-4455'),
             'bankIban' => \App\Models\Setting::getValue('bank_iban', 'PK00KB0000000000000001'),
             'bankNote' => \App\Models\Setting::getValue('bank_note', 'Send payment to the bank account and upload the transfer screenshot below.'),
+        ]);
+    }
+
+    public function trackOrder(Request $request)
+    {
+        $orderNumber = strtoupper(trim((string) $request->query('order_number', '')));
+        $email = strtolower(trim((string) $request->query('email', '')));
+
+        if ($orderNumber === '' || $email === '') {
+            return view('track-order-gate', [
+                'pageTitle' => 'Track Order',
+                'messageTitle' => 'Order link required',
+                'messageBody' => 'This page is only available from your confirmation email.',
+                'helpBody' => 'If you placed an order and did not receive the email, contact support and we will resend it.',
+            ]);
+        }
+
+        $order = Order::query()
+            ->with('items')
+            ->whereRaw('upper(order_number) = ?', [$orderNumber])
+            ->whereRaw('lower(email) = ?', [$email])
+            ->first();
+
+        if (!$order) {
+            return view('track-order-gate', [
+                'pageTitle' => 'Track Order',
+                'messageTitle' => 'We could not find that order',
+                'messageBody' => 'Please make sure you opened the tracking link from your order email.',
+                'helpBody' => 'If you think this is a mistake, contact support with your order number and email.',
+            ]);
+        }
+
+        return view('track-order', [
+            'pageTitle' => 'Track Order',
+            'order' => $order,
         ]);
     }
 
