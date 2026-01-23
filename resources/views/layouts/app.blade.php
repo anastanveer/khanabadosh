@@ -697,7 +697,7 @@
           };
           setValue('customer_name', 'Ayesha Khan');
           setValue('email', 'ayesha.khan@example.com');
-          setValue('phone', '+92 300 1234567');
+          setValue('phone', '+14375519575');
           setValue('city', 'Lahore');
           setValue('address', 'House 21, Gulberg');
           setValue('postal_code', '54000');

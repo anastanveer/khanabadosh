@@ -5,13 +5,12 @@
       <div class="col-12 col-md-3">
         <h6>KHANABADOSH</h6>
         <div class="small mb-2">
-          36 block B new city lines<br>
-          behind state bank of Pakistan<br>
-          Faisalabad
+          Innisfil, Ontario<br>
+          Canada
         </div>
         <div class="small">
-          <strong>Phone:</strong> +92 300 0000000<br>
-          <strong>Email:</strong> info@khanabadoshonline.com
+          <strong>Phone:</strong> <a href="tel:+14375519575">+14375519575</a><br>
+          <strong>Email:</strong> info@khanabadoshfashion.ca
         </div>
         <div class="mt-3 d-flex gap-2">
           <a href="#" aria-label="Facebook"><i class="bi bi-facebook"></i></a>
@@ -56,7 +55,9 @@
 
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 small">
       <div>© 2026 Khanabadosh. All Rights Reserved.</div>
-      <div class="text-secondary">Designed by Analytics</div>
+      <div class="text-secondary">
+        Designed by <a href="https://torontobytes.com/" target="_blank" rel="noopener">TorontoBytes</a>
+      </div>
     </div>
   </div>
 </footer>

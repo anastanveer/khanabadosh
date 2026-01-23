@@ -53,7 +53,7 @@
                 </div>
                 <div>
                   <label>Phone</label>
-                  <input type="tel" name="phone" placeholder="+92 300 0000000" value="{{ old('phone') }}" required>
+                  <input type="tel" name="phone" placeholder="+14375519575" value="{{ old('phone') }}" required>
                 </div>
                 <div>
                   <label>City</label>
