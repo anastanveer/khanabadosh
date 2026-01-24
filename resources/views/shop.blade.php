@@ -31,7 +31,7 @@
         $priceStep = max((int) round($range / 200), 1);
       @endphp
       <div class="row g-4">
-        <aside class="col-12 col-lg-3">
+        <aside class="col-12 col-lg-3 kb-shop-sidebar" id="kb-mobile-filters" data-mobile-filter-panel>
           <div class="kb-sidebar">
             <div class="kb-filter">
               <div class="kb-filter-title">Categories</div>
@@ -140,9 +140,9 @@
           </div>
         </aside>
 
-        <section class="col-12 col-lg-9">
-          <div class="d-flex align-items-start justify-content-between flex-wrap gap-3">
-            <div>
+        <section class="col-12 col-lg-9 kb-shop-products">
+          <div class="kb-shop-toolbar">
+            <div class="kb-shop-heading">
               <div class="kb-page-title">{{ $pageTitle }}</div>
               <div class="kb-view mt-2">
                 <button class="kb-view-btn active" type="button" data-view-btn="grid" aria-label="Grid view">
@@ -154,12 +154,25 @@
               </div>
             </div>
 
-            <div class="d-flex align-items-center gap-3">
-              <div class="kb-page-sub mb-0">Showing <span data-results-count>{{ $results }}</span> Results</div>
-              <button class="kb-sort" type="button">
-                <span>Best Selling</span>
-                <i class="bi bi-chevron-down"></i>
+            <div class="kb-shop-actions">
+              <button class="kb-filter-btn" type="button" data-mobile-filter-toggle aria-controls="kb-mobile-filters" aria-expanded="false">
+                <i class="bi bi-sliders2"></i>
+                <span>Filters</span>
               </button>
+              <div class="kb-page-sub mb-0">Showing <span data-results-count>{{ $results }}</span> Results</div>
+              <div class="kb-sort" data-sort>
+                <button class="kb-sort-toggle" type="button" data-sort-toggle aria-expanded="false">
+                  <span data-sort-label>Best Selling</span>
+                  <i class="bi bi-chevron-down"></i>
+                </button>
+                <div class="kb-sort-menu" role="listbox" aria-label="Sort products">
+                  <button class="kb-sort-option is-active" type="button" data-sort-option="best">Best Selling</button>
+                  <button class="kb-sort-option" type="button" data-sort-option="new">New Arrivals</button>
+                  <button class="kb-sort-option" type="button" data-sort-option="price-asc">Price: Low to High</button>
+                  <button class="kb-sort-option" type="button" data-sort-option="price-desc">Price: High to Low</button>
+                  <button class="kb-sort-option" type="button" data-sort-option="title">Name: A-Z</button>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -189,7 +202,17 @@
                 $filterPrice = \App\Support\CurrencyFormatter::convert($productPriceValue) ?? 0;
                 $badge = \App\Support\ProductBadge::resolve($product, $compareValue);
               @endphp
-              <div class="col-6 col-md-4 kb-product-col" data-price-value="{{ $filterPrice }}">
+              @php
+                $createdTimestamp = 0;
+                if ($isModel && $product->source_created_at) {
+                    $createdTimestamp = $product->source_created_at->timestamp;
+                } elseif ($isModel && $product->created_at) {
+                    $createdTimestamp = $product->created_at->timestamp;
+                } elseif (is_array($product) && !empty($product['created_at'])) {
+                    $createdTimestamp = (int) strtotime($product['created_at']);
+                }
+              @endphp
+              <div class="col-6 col-md-4 kb-product-col" data-price-value="{{ $filterPrice }}" data-title="{{ \Illuminate\Support\Str::of($productName)->lower() }}" data-created="{{ $createdTimestamp }}">
                 <div class="kb-product-card position-relative">
                   @if ($badge)
                     <span class="{{ $badge['class'] }}">{{ $badge['label'] }}</span>

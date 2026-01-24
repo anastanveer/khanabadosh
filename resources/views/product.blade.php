@@ -30,10 +30,12 @@
       <div class="row g-4">
         <div class="col-12 col-lg-6">
           <div class="kb-product-hero">
-            <div class="kb-thumb-list">
+            <div class="kb-thumb-list" data-thumb-list>
               @if ($gallery->count())
                 @foreach ($gallery as $thumb)
-                  <img class="kb-thumb" src="{{ $thumb->src ?? '' }}" alt="{{ $name }}">
+                  <button class="kb-thumb-btn {{ $loop->first ? 'is-active' : '' }}" type="button" data-thumb="{{ $thumb->src ?? '' }}" aria-label="View image">
+                    <img class="kb-thumb" src="{{ $thumb->src ?? '' }}" alt="{{ $name }}">
+                  </button>
                 @endforeach
               @else
                 <div class="kb-thumb" aria-hidden="true"></div>
@@ -42,9 +44,13 @@
               @endif
             </div>
             @if ($gallery->count())
-              <img class="kb-main-image" src="{{ $gallery->first()->src ?? '' }}" alt="{{ $name }}">
+              <div class="kb-main-frame" data-zoom-container>
+                <img class="kb-main-image" src="{{ $gallery->first()->src ?? '' }}" alt="{{ $name }}" data-main-image>
+              </div>
             @else
-              <div class="kb-main-image"></div>
+              <div class="kb-main-frame">
+                <div class="kb-main-image"></div>
+              </div>
             @endif
           </div>
         </div>
@@ -104,3 +110,78 @@
     </div>
   </main>
 @endsection
+
+@push('scripts')
+  <script>
+    (function () {
+      var mainImage = document.querySelector('[data-main-image]');
+      var thumbButtons = document.querySelectorAll('[data-thumb]');
+      if (!mainImage || !thumbButtons.length) {
+        return;
+      }
+
+      var frame = mainImage.closest('[data-zoom-container]');
+      var scale = 1;
+      var minScale = 1;
+      var maxScale = 2.6;
+
+      var resetZoom = function () {
+        scale = 1;
+        mainImage.style.transform = 'scale(1)';
+        mainImage.style.transformOrigin = 'center center';
+        if (frame) {
+          frame.classList.remove('is-zoomed');
+        }
+      };
+
+      thumbButtons.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var src = btn.getAttribute('data-thumb');
+          if (!src) {
+            return;
+          }
+          mainImage.setAttribute('src', src);
+          thumbButtons.forEach(function (item) {
+            item.classList.remove('is-active');
+          });
+          btn.classList.add('is-active');
+          resetZoom();
+        });
+      });
+
+      if (!frame) {
+        return;
+      }
+
+      frame.addEventListener('wheel', function (event) {
+        event.preventDefault();
+        var delta = event.deltaY || 0;
+        if (delta > 0) {
+          scale -= 0.12;
+        } else {
+          scale += 0.12;
+        }
+        scale = Math.max(minScale, Math.min(maxScale, scale));
+        mainImage.style.transform = 'scale(' + scale.toFixed(2) + ')';
+        frame.classList.toggle('is-zoomed', scale > 1.01);
+      }, { passive: false });
+
+      frame.addEventListener('mousemove', function (event) {
+        if (scale <= 1.01) {
+          mainImage.style.transformOrigin = 'center center';
+          return;
+        }
+        var rect = frame.getBoundingClientRect();
+        var x = ((event.clientX - rect.left) / rect.width) * 100;
+        var y = ((event.clientY - rect.top) / rect.height) * 100;
+        mainImage.style.transformOrigin = x.toFixed(2) + '% ' + y.toFixed(2) + '%';
+      });
+
+      frame.addEventListener('mouseleave', function () {
+        if (scale <= 1.01) {
+          resetZoom();
+        }
+      });
+    })();
+  </script>
+@endpush

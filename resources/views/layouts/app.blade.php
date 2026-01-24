@@ -12,6 +12,23 @@
 <body>
   @include('partials.header')
 
+  <div class="kb-mobile-tab" aria-label="Quick actions">
+    <button class="kb-mobile-tab-item" type="button" aria-label="Search" data-search-open>
+      <i class="bi bi-search"></i>
+      <span class="kb-tab-label">Search</span>
+    </button>
+    <a class="kb-mobile-tab-item" href="{{ route('wishlist') }}" aria-label="Wishlist">
+      <i class="bi bi-heart"></i>
+      <span class="kb-tab-label">Wishlist</span>
+      <span class="kb-tab-badge" data-wishlist-count>0</span>
+    </a>
+    <a class="kb-mobile-tab-item" href="{{ route('cart') }}" aria-label="Cart">
+      <i class="bi bi-bag"></i>
+      <span class="kb-tab-label">Cart</span>
+      <span class="kb-tab-badge" data-cart-count>0</span>
+    </a>
+  </div>
+
   <div class="kb-search-drawer" data-search-drawer>
     <div class="kb-search-backdrop" data-search-close></div>
     <div class="kb-search-panel">
@@ -193,6 +210,87 @@
       });
     }
 
+    var sort = document.querySelector('[data-sort]');
+    if (sort && grid) {
+      var sortToggle = sort.querySelector('[data-sort-toggle]');
+      var sortMenu = sort.querySelector('.kb-sort-menu');
+      var sortLabel = sort.querySelector('[data-sort-label]');
+      var sortOptions = sort.querySelectorAll('[data-sort-option]');
+      var originalOrder = Array.from(grid.querySelectorAll('.kb-product-col'));
+
+      var closeSort = function () {
+        sort.classList.remove('is-open');
+        if (sortToggle) {
+          sortToggle.setAttribute('aria-expanded', 'false');
+        }
+      };
+      var openSort = function () {
+        sort.classList.add('is-open');
+        if (sortToggle) {
+          sortToggle.setAttribute('aria-expanded', 'true');
+        }
+      };
+      var applySort = function (key) {
+        var items = Array.from(grid.querySelectorAll('.kb-product-col'));
+        if (key === 'best') {
+          items = originalOrder.slice();
+        } else if (key === 'price-asc') {
+          items.sort(function (a, b) {
+            return parseFloat(a.dataset.priceValue || '0') - parseFloat(b.dataset.priceValue || '0');
+          });
+        } else if (key === 'price-desc') {
+          items.sort(function (a, b) {
+            return parseFloat(b.dataset.priceValue || '0') - parseFloat(a.dataset.priceValue || '0');
+          });
+        } else if (key === 'title') {
+          items.sort(function (a, b) {
+            return (a.dataset.title || '').localeCompare(b.dataset.title || '');
+          });
+        } else if (key === 'new') {
+          items.sort(function (a, b) {
+            return parseInt(b.dataset.created || '0', 10) - parseInt(a.dataset.created || '0', 10);
+          });
+        }
+        items.forEach(function (item) {
+          grid.appendChild(item);
+        });
+      };
+
+      if (sortToggle) {
+        sortToggle.addEventListener('click', function () {
+          if (sort.classList.contains('is-open')) {
+            closeSort();
+          } else {
+            openSort();
+          }
+        });
+      }
+      sortOptions.forEach(function (option) {
+        option.addEventListener('click', function () {
+          var key = option.getAttribute('data-sort-option') || 'best';
+          applySort(key);
+          if (sortLabel) {
+            sortLabel.textContent = option.textContent;
+          }
+          sortOptions.forEach(function (item) {
+            item.classList.remove('is-active');
+          });
+          option.classList.add('is-active');
+          closeSort();
+        });
+      });
+      document.addEventListener('click', function (event) {
+        if (!sort.contains(event.target)) {
+          closeSort();
+        }
+      });
+      document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape') {
+          closeSort();
+        }
+      });
+    }
+
     var priceFilter = document.querySelector('.kb-price-filter');
     if (priceFilter) {
       var minRange = priceFilter.querySelector('[data-price-min-range]');
@@ -316,18 +414,18 @@
     if (!cartCount) {
       localStorage.setItem('kbCartCount', '0');
     }
-    var wishlistCountEl = document.querySelector('[data-wishlist-count]');
-    var cartCountEl = document.querySelector('[data-cart-count]');
+    var wishlistCountEls = document.querySelectorAll('[data-wishlist-count]');
+    var cartCountEls = document.querySelectorAll('[data-cart-count]');
 
     var updateCounts = function () {
-      if (wishlistCountEl) {
-        wishlistCountEl.textContent = wishlist.length;
-        wishlistCountEl.style.display = wishlist.length ? 'inline-block' : 'none';
-      }
-      if (cartCountEl) {
-        cartCountEl.textContent = cartCount;
-        cartCountEl.style.display = cartCount ? 'inline-block' : 'none';
-      }
+      wishlistCountEls.forEach(function (el) {
+        el.textContent = wishlist.length;
+        el.style.display = wishlist.length ? 'inline-block' : 'none';
+      });
+      cartCountEls.forEach(function (el) {
+        el.textContent = cartCount;
+        el.style.display = cartCount ? 'inline-block' : 'none';
+      });
       document.querySelectorAll('[data-wishlist-total]').forEach(function (el) {
         el.textContent = wishlist.length + ' items saved';
       });
@@ -779,6 +877,116 @@
         closeSearch();
       }
     });
+
+    var navToggle = document.querySelector('[data-nav-toggle]');
+    var nav = document.querySelector('.kb-nav');
+    var navOverlay = document.querySelector('[data-nav-overlay]');
+    var navCloseButtons = document.querySelectorAll('[data-nav-close]');
+    var mobileNavQuery = window.matchMedia('(max-width: 992px)');
+
+    var resetNavMenus = function () {
+      if (!nav) {
+        return;
+      }
+      nav.querySelectorAll('.is-open').forEach(function (item) {
+        item.classList.remove('is-open');
+      });
+    };
+    var closeNav = function () {
+      document.body.classList.remove('kb-nav-open');
+      if (navToggle) {
+        navToggle.setAttribute('aria-expanded', 'false');
+      }
+      resetNavMenus();
+    };
+    var openNav = function () {
+      document.body.classList.add('kb-nav-open');
+      if (navToggle) {
+        navToggle.setAttribute('aria-expanded', 'true');
+      }
+    };
+
+    if (navToggle && nav) {
+      navToggle.addEventListener('click', function () {
+        if (document.body.classList.contains('kb-nav-open')) {
+          closeNav();
+        } else {
+          openNav();
+        }
+      });
+    }
+    if (navOverlay) {
+      navOverlay.addEventListener('click', closeNav);
+    }
+    navCloseButtons.forEach(function (btn) {
+      btn.addEventListener('click', closeNav);
+    });
+    if (nav) {
+      nav.addEventListener('click', function (event) {
+        if (!mobileNavQuery.matches) {
+          return;
+        }
+        var dropdownLink = event.target.closest('.kb-dropdown > .kb-nav-link');
+        if (dropdownLink) {
+          var dropdown = dropdownLink.closest('.kb-dropdown');
+          if (dropdown && !dropdown.classList.contains('is-open')) {
+            event.preventDefault();
+            nav.querySelectorAll('.kb-dropdown.is-open').forEach(function (item) {
+              if (item !== dropdown) {
+                item.classList.remove('is-open');
+              }
+            });
+            dropdown.classList.add('is-open');
+          }
+          return;
+        }
+
+        var submenuLink = event.target.closest('.kb-dropdown-list li.has-submenu > a');
+        if (submenuLink) {
+          var submenuItem = submenuLink.closest('.has-submenu');
+          if (submenuItem && !submenuItem.classList.contains('is-open')) {
+            event.preventDefault();
+            var list = submenuItem.parentElement;
+            if (list) {
+              list.querySelectorAll('.has-submenu.is-open').forEach(function (item) {
+                if (item !== submenuItem) {
+                  item.classList.remove('is-open');
+                }
+              });
+            }
+            submenuItem.classList.add('is-open');
+          }
+          return;
+        }
+
+        var link = event.target.closest('a');
+        if (link) {
+          closeNav();
+        }
+      });
+    }
+    mobileNavQuery.addEventListener('change', function (event) {
+      if (!event.matches) {
+        closeNav();
+      }
+    });
+    document.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape') {
+        closeNav();
+      }
+    });
+
+    var mobileFilterToggle = document.querySelector('[data-mobile-filter-toggle]');
+    var mobileFilterPanel = document.querySelector('[data-mobile-filter-panel]');
+    if (mobileFilterToggle && mobileFilterPanel) {
+      mobileFilterToggle.addEventListener('click', function () {
+        var isOpen = mobileFilterPanel.classList.toggle('is-open');
+        mobileFilterToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+        if (isOpen && window.matchMedia('(max-width: 992px)').matches) {
+          mobileFilterPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
+    }
   </script>
   @stack('scripts')
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
