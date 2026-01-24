@@ -549,7 +549,7 @@ class PageController extends Controller
     {
         $collections = Collection::query()
             ->withCount('products')
-            ->where('products_count', '>', 0)
+            ->has('products')
             ->orderBy('title')
             ->get();
 
@@ -593,7 +593,7 @@ class PageController extends Controller
     {
         $collections = Collection::query()
             ->withCount('products')
-            ->where('products_count', '>', 0)
+            ->has('products')
             ->orderBy('title')
             ->get();
 
@@ -624,7 +624,6 @@ class PageController extends Controller
             ->whereHas('products', function ($query) use ($tag) {
                 $query->whereRaw("(',' || lower(tags) || ',') LIKE ?", ['%,' . strtolower($tag) . ',%']);
             })
-            ->where('products_count', '>', 0)
             ->orderBy('title')
             ->get();
     }

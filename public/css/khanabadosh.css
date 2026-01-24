@@ -13,10 +13,22 @@
   --kb-border: 1px solid rgba(0,0,0,.08);
 }
 
+html,
+body{
+  height: 100%;
+}
+
 body{
   background: var(--kb-bg);
   color: var(--kb-text);
   font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+  min-height: 100vh;
+  display:flex;
+  flex-direction:column;
+}
+
+main{
+  flex: 1 0 auto;
 }
 
 /* ===== Header ===== */
@@ -2082,6 +2094,7 @@ main[data-checkout-page] .kb-page-sub{
   background:#0c0c0c;
   color:#d6d6d6;
   padding: 2.2rem 0 1.2rem;
+  margin-top:auto;
 }
 .kb-footer h6{
   color:#fff;
