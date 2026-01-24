@@ -7,6 +7,7 @@
     $sku = $isModel ? optional($product->variants->first())->sku : $product['sku'];
     $priceValue = $isModel ? $product->effectivePrice() : $product['price'];
     $price = $priceValue ? \App\Support\CurrencyFormatter::format($priceValue) : null;
+    $productHandle = $isModel ? $product->handle : ($productSlug ?? $product['slug'] ?? '');
     $compareValue = null;
     if ($isModel && $product->hasActiveDiscount() && $product->price) {
         $compareValue = $product->price;
@@ -67,30 +68,34 @@
             </div>
           @endif
 
-          <div class="mt-3">
-            <div class="kb-filter-title">Color</div>
-            <div class="kb-color-row">
-              @php
-                $swatches = $isModel ? ['#2b2d31', '#6b7280', '#a3a3a3', '#111111'] : $product['colors'];
-              @endphp
-              @foreach ($swatches as $index => $color)
-                <span class="kb-swatch {{ $index === 0 ? 'active' : '' }}" style="background: {{ $color }};"></span>
-              @endforeach
+          @if (!empty($colorSwatches))
+            <div class="mt-3">
+              <div class="kb-filter-title">Color</div>
+              <div class="kb-color-row">
+                @foreach ($colorSwatches as $swatch)
+                  <a
+                    class="kb-swatch {{ $swatch['isActive'] ? 'active' : '' }}"
+                    style="background: {{ $swatch['value'] }};"
+                    href="{{ $swatch['url'] }}"
+                    aria-label="Select {{ $swatch['label'] }}"
+                  ></a>
+                @endforeach
+              </div>
             </div>
-          </div>
+          @endif
 
           <div class="mt-3">
             <div class="kb-filter-title">Quantity</div>
-            <div class="kb-qty">
-              <button type="button" aria-label="Decrease quantity">-</button>
-              <input type="text" value="1" aria-label="Quantity">
-              <button type="button" aria-label="Increase quantity">+</button>
+            <div class="kb-qty" data-qty>
+              <button type="button" data-qty-minus aria-label="Decrease quantity">-</button>
+              <input id="kb-product-qty" type="number" min="1" step="1" value="1" aria-label="Quantity" data-qty-input>
+              <button type="button" data-qty-plus aria-label="Increase quantity">+</button>
             </div>
           </div>
 
           <div class="kb-action">
-            <button class="kb-btn-primary" type="button">Add to Cart</button>
-            <button class="kb-btn-outline" type="button">Buy It Now</button>
+            <button class="kb-btn-primary js-cart" type="button" data-product-id="{{ $productHandle }}" data-qty-target="kb-product-qty">Add to Cart</button>
+            <button class="kb-btn-outline js-buy-now" type="button" data-product-id="{{ $productHandle }}" data-qty-target="kb-product-qty" data-cart-url="{{ route('cart') }}">Buy It Now</button>
           </div>
 
           <div class="kb-info-card">
@@ -116,6 +121,7 @@
     (function () {
       var mainImage = document.querySelector('[data-main-image]');
       var thumbButtons = document.querySelectorAll('[data-thumb]');
+      var swatches = document.querySelectorAll('[data-swatch]');
       if (!mainImage || !thumbButtons.length) {
         return;
       }
@@ -146,6 +152,34 @@
           });
           btn.classList.add('is-active');
           resetZoom();
+        });
+      });
+
+      var activateSwatch = function (swatch) {
+        swatches.forEach(function (item) {
+          item.classList.remove('active');
+        });
+        swatch.classList.add('active');
+
+        var src = swatch.getAttribute('data-swatch-image');
+        if (src) {
+          mainImage.setAttribute('src', src);
+          thumbButtons.forEach(function (item) {
+            item.classList.toggle('is-active', item.getAttribute('data-thumb') === src);
+          });
+          resetZoom();
+        }
+      };
+
+      swatches.forEach(function (swatch) {
+        swatch.addEventListener('click', function () {
+          activateSwatch(swatch);
+        });
+        swatch.addEventListener('keydown', function (event) {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            activateSwatch(swatch);
+          }
         });
       });
 

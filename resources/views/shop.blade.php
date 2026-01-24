@@ -90,6 +90,24 @@
               </label>
             </div>
 
+            @if (!empty($colorFilters))
+              <div class="kb-filter" data-color-filter>
+                <div class="kb-filter-title">Colors</div>
+                <div class="kb-color-filter">
+                  <button class="kb-color-option is-active" type="button" data-color-option="all">
+                    <span class="kb-color-dot kb-color-dot--all"></span>
+                    <span>All</span>
+                  </button>
+                  @foreach ($colorFilters as $color)
+                    <button class="kb-color-option" type="button" data-color-option="{{ $color['key'] }}" style="--swatch: {{ $color['value'] }};">
+                      <span class="kb-color-dot"></span>
+                      <span>{{ $color['label'] }}</span>
+                    </button>
+                  @endforeach
+                </div>
+              </div>
+            @endif
+
             <div class="kb-filter">
               <div class="kb-filter-title">Price</div>
               <div class="kb-price-filter" data-price-symbol="{{ \App\Support\CurrencyFormatter::symbol() }}">
@@ -212,7 +230,10 @@
                     $createdTimestamp = (int) strtotime($product['created_at']);
                 }
               @endphp
-              <div class="col-6 col-md-4 kb-product-col" data-price-value="{{ $filterPrice }}" data-title="{{ \Illuminate\Support\Str::of($productName)->lower() }}" data-created="{{ $createdTimestamp }}">
+              @php
+                $colorList = $colorMap[$productSlug] ?? [];
+              @endphp
+              <div class="col-6 col-md-4 kb-product-col" data-price-value="{{ $filterPrice }}" data-title="{{ \Illuminate\Support\Str::of($productName)->lower() }}" data-created="{{ $createdTimestamp }}" data-colors="{{ implode(',', $colorList) }}">
                 <div class="kb-product-card position-relative">
                   @if ($badge)
                     <span class="{{ $badge['class'] }}">{{ $badge['label'] }}</span>

@@ -197,6 +197,8 @@
     });
 
     var grid = document.querySelector('[data-product-grid]');
+    var activeColor = 'all';
+    var applyFilters = function () {};
     if (grid) {
       document.querySelectorAll('[data-view-btn]').forEach(function (btn) {
         btn.addEventListener('click', function () {
@@ -355,6 +357,10 @@
           priceCards.forEach(function (card) {
             var price = parseFloat(card.getAttribute('data-price-value') || '0');
             var hidden = price < minValue || price > maxValue;
+            if (!hidden && activeColor !== 'all') {
+              var colors = (card.getAttribute('data-colors') || '').split(',').filter(Boolean);
+              hidden = colors.indexOf(activeColor) === -1;
+            }
             card.classList.toggle('d-none', hidden);
             if (!hidden) {
               visible += 1;
@@ -398,7 +404,43 @@
           });
         }
         applyFilter();
+        applyFilters = applyFilter;
       }
+    }
+
+    if (grid && !priceFilter) {
+      applyFilters = function () {
+        var visible = 0;
+        grid.querySelectorAll('[data-price-value]').forEach(function (card) {
+          var hidden = false;
+          if (activeColor !== 'all') {
+            var colors = (card.getAttribute('data-colors') || '').split(',').filter(Boolean);
+            hidden = colors.indexOf(activeColor) === -1;
+          }
+          card.classList.toggle('d-none', hidden);
+          if (!hidden) {
+            visible += 1;
+          }
+        });
+        var resultsCount = document.querySelector('[data-results-count]');
+        if (resultsCount) {
+          resultsCount.textContent = String(visible);
+        }
+      };
+    }
+
+    var colorFilter = document.querySelector('[data-color-filter]');
+    if (colorFilter) {
+      colorFilter.querySelectorAll('[data-color-option]').forEach(function (option) {
+        option.addEventListener('click', function () {
+          activeColor = option.getAttribute('data-color-option') || 'all';
+          colorFilter.querySelectorAll('[data-color-option]').forEach(function (item) {
+            item.classList.remove('is-active');
+          });
+          option.classList.add('is-active');
+          applyFilters();
+        });
+      });
     }
 
     var wishlist = JSON.parse(localStorage.getItem('kbWishlist') || '[]');
@@ -453,13 +495,86 @@
     document.querySelectorAll('.js-cart').forEach(function (btn) {
       btn.addEventListener('click', function () {
         var id = btn.getAttribute('data-product-id');
+        var qty = 1;
+        var qtyTarget = btn.getAttribute('data-qty-target');
+        if (qtyTarget) {
+          var qtyInput = document.getElementById(qtyTarget);
+          if (qtyInput) {
+            qty = parseInt(qtyInput.value || '1', 10);
+          }
+        }
+        if (!qty || qty < 1) {
+          qty = 1;
+        }
         if (id) {
-          cartItems.push(id);
+          for (var i = 0; i < qty; i += 1) {
+            cartItems.push(id);
+          }
           localStorage.setItem('kbCartItems', JSON.stringify(cartItems));
         }
         cartCount = cartItems.length;
         localStorage.setItem('kbCartCount', String(cartCount));
         updateCounts();
+      });
+    });
+
+    document.querySelectorAll('[data-qty]').forEach(function (wrap) {
+      var input = wrap.querySelector('[data-qty-input]');
+      var minus = wrap.querySelector('[data-qty-minus]');
+      var plus = wrap.querySelector('[data-qty-plus]');
+      if (!input) {
+        return;
+      }
+      var clamp = function (value) {
+        var parsed = parseInt(value || '1', 10);
+        if (isNaN(parsed) || parsed < 1) {
+          return 1;
+        }
+        return parsed;
+      };
+      if (minus) {
+        minus.addEventListener('click', function () {
+          input.value = clamp(parseInt(input.value || '1', 10) - 1);
+        });
+      }
+      if (plus) {
+        plus.addEventListener('click', function () {
+          input.value = clamp(parseInt(input.value || '1', 10) + 1);
+        });
+      }
+      input.addEventListener('change', function () {
+        input.value = clamp(input.value);
+      });
+      input.addEventListener('blur', function () {
+        input.value = clamp(input.value);
+      });
+    });
+
+    document.querySelectorAll('.js-buy-now').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var id = btn.getAttribute('data-product-id');
+        var qty = 1;
+        var qtyTarget = btn.getAttribute('data-qty-target');
+        if (qtyTarget) {
+          var qtyInput = document.getElementById(qtyTarget);
+          if (qtyInput) {
+            qty = parseInt(qtyInput.value || '1', 10);
+          }
+        }
+        if (!qty || qty < 1) {
+          qty = 1;
+        }
+        if (id) {
+          for (var i = 0; i < qty; i += 1) {
+            cartItems.push(id);
+          }
+          localStorage.setItem('kbCartItems', JSON.stringify(cartItems));
+          cartCount = cartItems.length;
+          localStorage.setItem('kbCartCount', String(cartCount));
+          updateCounts();
+        }
+        var cartUrl = btn.getAttribute('data-cart-url') || '/cart';
+        window.location.href = cartUrl;
       });
     });
 

@@ -122,6 +122,7 @@
                     </button>
                   </div>
                 </div>
+                <a class="kb-card-link" href="{{ route('products.show', ['collection' => 'men-all', 'slug' => $product->handle]) }}" aria-label="View {{ $product->title }}"></a>
                 <div class="name">{{ $product->title }}</div>
                 <div class="price">
                   {{ $price }}
@@ -220,6 +221,7 @@
                     </button>
                     </div>
                   </div>
+                  <a class="kb-card-link" href="{{ route('products.show', ['collection' => 'women-all', 'slug' => $product->handle]) }}" aria-label="View {{ $product->title }}"></a>
                   <div class="code">{{ $product->handle }}</div>
                   <div class="now">
                     {{ $price }}
@@ -291,6 +293,7 @@
                     </button>
                     </div>
                   </div>
+                  <a class="kb-card-link" href="{{ route('products.show', ['collection' => 'men-all', 'slug' => $product->handle]) }}" aria-label="View {{ $product->title }}"></a>
                   <div class="code">{{ $product->handle }}</div>
                   <div class="now">
                     {{ $price }}

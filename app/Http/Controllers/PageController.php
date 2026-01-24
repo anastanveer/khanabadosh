@@ -81,6 +81,8 @@ class PageController extends Controller
 
         $inStockCount = $products->filter(fn ($product) => $product->available ?? true)->count();
         $sidebarGroups = $this->resolveSidebarGroups();
+        $colorFilters = $this->resolveColorFilters($products);
+        $colorMap = $this->mapProductColors($products);
 
         return view('shop', [
             'pageTitle' => $pageTitle,
@@ -91,6 +93,8 @@ class PageController extends Controller
             'sidebarWomen' => $sidebarGroups['women'],
             'inStockCount' => $inStockCount,
             'popularProducts' => $popularProducts,
+            'colorFilters' => $colorFilters,
+            'colorMap' => $colorMap,
         ]);
     }
 
@@ -131,6 +135,8 @@ class PageController extends Controller
                 ->take(3)
                 ->get();
         }
+        $colorFilters = $this->resolveColorFilters($products);
+        $colorMap = $this->mapProductColors($products);
 
         return view('shop', [
             'pageTitle' => $pageTitle,
@@ -141,12 +147,17 @@ class PageController extends Controller
             'sidebarWomen' => $this->resolveSidebarGroups()['women'],
             'inStockCount' => $products->filter(fn ($product) => $product->available ?? true)->count(),
             'popularProducts' => $popularProducts,
+            'colorFilters' => $colorFilters,
+            'colorMap' => $colorMap,
         ]);
     }
 
     public function product(string $collection, string $slug)
     {
-        $collectionModel = Collection::query()->where('handle', $collection)->first();
+        $collectionModel = Collection::query()
+            ->where('handle', $collection)
+            ->with(['products.images'])
+            ->first();
         $productModel = Product::query()
             ->where('handle', $slug)
             ->with(['images', 'variants'])
@@ -154,12 +165,41 @@ class PageController extends Controller
 
         $collectionTitle = $collectionModel?->title ?? $this->resolveCollectionTitle($collection);
         $product = $productModel ?? $this->resolveProduct($slug);
+        $colorSwatches = [];
+        if ($collectionModel && $collectionModel->products->isNotEmpty()) {
+            $palette = $this->colorPalette();
+            $patterns = $this->colorPatterns();
+            $swatchMap = [];
+
+            foreach ($collectionModel->products as $item) {
+                $keys = $this->extractColorKeysFromText($this->productColorText($item), $patterns);
+                $key = $keys[0] ?? null;
+                if (!$key || !isset($palette[$key])) {
+                    continue;
+                }
+                if (!isset($swatchMap[$key])) {
+                    $swatchMap[$key] = [
+                        'key' => $key,
+                        'label' => Str::of($key)->replace('-', ' ')->title()->value(),
+                        'value' => $palette[$key],
+                        'url' => route('products.show', ['collection' => $collection, 'slug' => $item->handle]),
+                        'isActive' => $item->handle === $slug,
+                    ];
+                } elseif ($item->handle === $slug) {
+                    $swatchMap[$key]['isActive'] = true;
+                }
+            }
+
+            $colorSwatches = array_values($swatchMap);
+        }
 
         return view('product', [
             'pageTitle' => $productModel?->title ?? $product['name'],
             'collectionSlug' => $collection,
             'collectionTitle' => $collectionTitle,
             'product' => $product,
+            'colorSwatches' => $colorSwatches,
+            'productSlug' => $slug,
         ]);
     }
 
@@ -626,6 +666,167 @@ class PageController extends Controller
             })
             ->orderBy('title')
             ->get();
+    }
+
+    private function resolveColorFilters($products): array
+    {
+        $palette = $this->colorPalette();
+        $patterns = $this->colorPatterns();
+        $found = [];
+
+        foreach ($products as $product) {
+            $text = $this->productColorText($product);
+            $keys = $this->extractColorKeysFromText($text, $patterns);
+            foreach ($keys as $key) {
+                $found[$key] = true;
+            }
+        }
+
+        $filters = [];
+        foreach ($palette as $key => $hex) {
+            if (!isset($found[$key])) {
+                continue;
+            }
+            $filters[] = [
+                'key' => $key,
+                'label' => Str::of($key)->replace('-', ' ')->title()->value(),
+                'value' => $hex,
+            ];
+        }
+
+        return $filters;
+    }
+
+    private function mapProductColors($products): array
+    {
+        $patterns = $this->colorPatterns();
+        $map = [];
+
+        foreach ($products as $product) {
+            $handle = $product instanceof Product
+                ? $product->handle
+                : (string) ($product['slug'] ?? Str::slug($product['name'] ?? 'product'));
+            $text = $this->productColorText($product);
+            $map[$handle] = $this->extractColorKeysFromText($text, $patterns);
+        }
+
+        return $map;
+    }
+
+    private function productColorText($product): string
+    {
+        if ($product instanceof Product) {
+            $parts = [
+                (string) $product->title,
+                (string) $product->product_type,
+                (string) $product->tags,
+                strip_tags((string) $product->body_html),
+            ];
+        } else {
+            $parts = [
+                (string) ($product['name'] ?? ''),
+                (string) ($product['product_type'] ?? ''),
+                (string) ($product['tags'] ?? ''),
+                (string) ($product['description'] ?? ''),
+                strip_tags((string) ($product['body_html'] ?? '')),
+            ];
+        }
+
+        return strtolower(implode(' ', $parts));
+    }
+
+    private function extractColorKeysFromText(string $text, array $patterns): array
+    {
+        $keys = [];
+
+        foreach ($patterns as $key => $variants) {
+            foreach ($variants as $variant) {
+                $pattern = '/\b' . preg_quote($variant, '/') . '\b/i';
+                if (preg_match($pattern, $text)) {
+                    $keys[$key] = true;
+                    break;
+                }
+            }
+        }
+
+        return array_keys($keys);
+    }
+
+    private function colorPatterns(): array
+    {
+        $palette = $this->colorPalette();
+        $patterns = [];
+
+        foreach ($palette as $key => $_) {
+            $variants = [$key];
+            if (Str::contains($key, '-')) {
+                $variants[] = str_replace('-', ' ', $key);
+                $variants[] = str_replace('-', '', $key);
+            }
+            $patterns[$key] = array_values(array_unique($variants));
+        }
+
+        $patterns['grey'][] = 'gray';
+        $patterns['grey'][] = 'silver';
+        $patterns['grey'][] = 'ash';
+        $patterns['grey'][] = 'slate';
+        $patterns['grey'][] = 'stone';
+        $patterns['grey'][] = 'graphite';
+        $patterns['grey'][] = 'carbon';
+        $patterns['off-white'][] = 'offwhite';
+        $patterns['off-white'][] = 'off white';
+        $patterns['cream'][] = 'ivory';
+        $patterns['cream'][] = 'vanilla';
+        $patterns['cream'][] = 'pastel cream';
+        $patterns['beige'][] = 'sand';
+        $patterns['beige'][] = 'biscuit';
+        $patterns['beige'][] = 'biscuiti';
+        $patterns['beige'][] = 'taupe';
+        $patterns['tan'][] = 'camel';
+        $patterns['purple'][] = 'lavender';
+        $patterns['purple'][] = 'violet';
+        $patterns['purple'][] = 'lilac';
+        $patterns['purple'][] = 'mauve';
+        $patterns['blue'][] = 'denim';
+        $patterns['blue'][] = 'sky';
+        $patterns['blue'][] = 'prussian';
+        $patterns['green'][] = 'sage';
+        $patterns['brown'][] = 'bistre';
+        $patterns['brown'][] = 'wood';
+        $patterns['brown'][] = 'coffee';
+        $patterns['brown'][] = 'chocolate';
+        $patterns['brown'][] = 'mars';
+        $patterns['brown'][] = 'copper';
+
+        return $patterns;
+    }
+
+    private function colorPalette(): array
+    {
+        return [
+            'black' => '#111111',
+            'white' => '#f8f8f8',
+            'off-white' => '#f4f1e6',
+            'cream' => '#f3ead7',
+            'beige' => '#e6d5b8',
+            'tan' => '#c6a77b',
+            'khaki' => '#b7a37a',
+            'brown' => '#8b5e3c',
+            'grey' => '#8a8f98',
+            'charcoal' => '#3b3b3b',
+            'navy' => '#1f2a44',
+            'blue' => '#2f6db2',
+            'teal' => '#2c7f7c',
+            'green' => '#2f6b3f',
+            'olive' => '#6b6b3f',
+            'red' => '#b91c1c',
+            'maroon' => '#7b1e1e',
+            'pink' => '#d977a1',
+            'purple' => '#6b4f9a',
+            'orange' => '#e38b2c',
+            'yellow' => '#e1c34a',
+            'mustard' => '#c9a227',
+        ];
     }
 
     private function productsByTags(array $tags, int $limit)
