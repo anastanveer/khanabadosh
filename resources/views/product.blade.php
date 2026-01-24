@@ -187,6 +187,11 @@
         return;
       }
 
+      var allowZoom = window.matchMedia('(pointer: fine)').matches;
+      if (!allowZoom) {
+        return;
+      }
+
       frame.addEventListener('wheel', function (event) {
         event.preventDefault();
         var delta = event.deltaY || 0;

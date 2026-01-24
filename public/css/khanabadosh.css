@@ -2628,6 +2628,35 @@ main[data-checkout-page] .kb-page-sub{
     width:100%;
     border-radius:999px;
   }
+  .kb-product-hero{
+    display:flex;
+    flex-direction:column;
+    gap: .75rem;
+  }
+  .kb-thumb-list{
+    flex-direction:row;
+    order:2;
+    overflow-x:auto;
+    overflow-y:hidden;
+    gap:.5rem;
+  }
+  .kb-thumb{
+    width:54px;
+    height:68px;
+  }
+  .kb-main-frame{
+    order:1;
+    min-height: 0;
+    background: #f5f5f5;
+    width:100%;
+    max-width: 100%;
+    aspect-ratio: 3 / 4;
+    max-height: 420px;
+  }
+  .kb-main-image{
+    height:100%;
+    object-fit: cover;
+  }
   .kb-ratio-hero{ aspect-ratio: auto; min-height: 0; height: auto; }
   .kb-hero-slide{ background: #f6f6f6; }
   .kb-hero-image{ object-fit: contain; height: auto; }
